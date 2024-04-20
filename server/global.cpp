@@ -1,7 +1,7 @@
 #include "global.h"
 // Next 3 stolen from csapp
 // ------------------ //
-ssize_t sio_put(char *msg) { return write(STDOUT_FILENO, msg, sizeof(msg)); }
+ssize_t sio_put(char *msg) { return write(STDOUT_FILENO, msg, strlen(msg)); }
 
 void sio_error(char *msg) {
   sio_put(msg);
