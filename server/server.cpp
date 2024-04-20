@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <errno.h>
 #include <iostream>
+#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
@@ -14,6 +15,8 @@
 #include <unistd.h>
 #include <vector>
 
+#define MAXLINE 1024
+
 // NUll the instance at start
 Server *Server::m_pInstance = nullptr;
 
@@ -22,13 +25,6 @@ Server *Server::Instance() {
     m_pInstance = new Server;
 
   return m_pInstance;
-}
-
-void childKillTestSigHandler(int sig) {
-  sio_write((char *)(std::to_string(getpid()).c_str()));
-  sio_write((char *)(" was told to die.\n"));
-  Server::Instance()->stop();
-  _exit(0);
 }
 
 int Server::run(char *ip, char *port) {
@@ -48,21 +44,10 @@ int Server::run(char *ip, char *port) {
     // make children
     if ((pid = Fork()) == 0) {
       setgid(group_pid);
-      if (signal(SIGUSR1, childKillTestSigHandler) == SIG_ERR)
-        unix_error((char *)("signal error"));
-
-      std::cout << getpid() << " is alive" << std::endl;
-
-      pause();
-      break;
+      // child stuff
     }
 
     PIDS.push_back(pid);
-  }
-
-  // now tell them all to DIE :D
-  for (int pid : PIDS) {
-    kill(pid, SIGUSR1);
   }
 
   return 0;
@@ -70,12 +55,29 @@ int Server::run(char *ip, char *port) {
 
 void Server::stop() {}
 
-void handleSigChild(int sig) {
-  int olderrno = errno;
-  while (waitpid(-1, NULL, 0) > 0)
-    sio_write((char *)("Reaped child"));
-  if (errno != ECHILD)
-    sio_error((char *)("waitpid error"));
+void Server::ServerChild(char *ip, char *port) {
+  struct addrinfo *p, *listp, hints;
+  char buf[MAXLINE];
+  int rc, flags;
 
-  errno = olderrno;
+  memset(&hints, 0, sizeof(struct addrinfo));
+
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_socktype = SOCK_STREAM;
+  if ((rc = getaddrinfo(ip, NULL, &hints, &listp)) != 0) {
+    fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(rc));
+    _exit(1);
+  }
+
+  flags = NI_NUMERICHOST;
+  for (p = listp; p; p = p->ai_next) {
+    getnameinfo(p->ai_addr, p->ai_addrlen, buf, MAXLINE, NULL, 0, flags);
+    printf("%s\n", buf);
+  }
+
+  freeaddrinfo(listp);
+
+  exit(0);
 }
