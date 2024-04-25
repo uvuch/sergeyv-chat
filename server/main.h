@@ -13,7 +13,7 @@
 
 void setSigHandlers();
 void handleExitSignal(int sig);
-void handleServerParams(int, char **, char *, char *);
+int handleServerParams(int, const char **, char *, char *);
 
 void server_stop();
 
