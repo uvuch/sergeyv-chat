@@ -1,6 +1,7 @@
 #include "main.h"
 #include "global.h"
 #include "server.h"
+#include <cctype>
 #include <cstring>
 #include <unistd.h>
 
@@ -12,16 +13,18 @@
 
 bool bRunning = true;
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
 
-  char arg1[CHAR_SIZE_OF_IP], arg2[CHAR_SIZE_OF_PORT];
+  char ip[CHAR_SIZE_OF_IP] = DEFAULT_IP, port[CHAR_SIZE_OF_PORT] = DEFAULT_PORT;
 
-  handleServerParams(argc, argv, arg1, arg2);
-  std::cout << "Ip: " << arg1 << "  Port: " << arg2 << std::endl;
+  if (handleServerParams(argc, argv, ip, port) < 0)
+    _exit(0);
+
+  std::cout << "Ip: " << ip << "  Port: " << port << std::endl;
 
   setSigHandlers();
 
-  Server::Instance()->run(arg1, arg2);
+  Server::Instance()->run(ip, port);
 
   while (bRunning) {
     sleep(1);
@@ -30,45 +33,57 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void handleServerParams(int argc, char **argv, char *ipArg, char *portArg) {
-  bool ipWritten, portWritten = false;
-  if (argc > 1)
+int checkAndCopyPortArg(int argc, const char *argv, char *portArg) {
+  bool itsANumber = true;
+  for (int i = 0; i < strlen(argv); i++) {
+    if (!std::isdigit(argv[i])) {
+      itsANumber = false;
+      break;
+    }
+
+    if (itsANumber)
+      std::strncpy(portArg, argv, CHAR_SIZE_OF_PORT - 1);
+
+    else {
+      std::cout << "Port should be a valid positive numeric value" << std::endl;
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+int handleServerParams(int argc, const char **argv, char *ipArg,
+                       char *portArg) {
+  if (argc == 2) {
+    if (checkAndCopyPortArg(argc, argv[1], portArg) < 0)
+      return -1;
+  } else
     for (int i = 1; i < argc; i++) {
       if (i + 1 < argc) {
         // Ip
-        if (std::strcmp(static_cast<const char *>("ip"), argv[i])) {
+        if (std::strcmp("-ip", argv[i]) == 0) {
           std::strncpy(ipArg, argv[i + 1], CHAR_SIZE_OF_IP - 1);
-          ipWritten = true;
           continue;
         }
 
         // Port
-        else if (std::strcmp(static_cast<const char *>("-p"), argv[i])) {
-          // Make sure that port is not negative!
-          if (argv[i + 1][0] != '-') {
-            std::strncpy(portArg, argv[i + 1], CHAR_SIZE_OF_PORT - 1);
-            portWritten = true;
-            continue;
-          }
-
-          else {
-            std::cout << "Port cant be negative" << std::endl;
-            server_stop();
-          }
+        // Make sure that port is not negative!
+        if (std::strcmp("-p", argv[i]) == 0) {
+          if (checkAndCopyPortArg(argc, argv[i + 1], portArg) < 0)
+            return -1;
         }
       }
     }
 
-  if (!ipWritten)
-    std::strncpy(ipArg, DEFAULT_IP, sizeof(DEFAULT_IP));
-  if (!portWritten)
-    std::strncpy(portArg, DEFAULT_PORT, sizeof(DEFAULT_PORT));
+  return 0;
 }
 
 void server_stop() {
-  Server::Instance()->stop();
-  free(Server::Instance());
-  exit(0);
+  if (Server::Instance()) {
+    Server::Instance()->stop();
+    free(Server::Instance());
+  }
 }
 
 void setSigHandlers() {
