@@ -1,5 +1,6 @@
 #include "server.h"
 #include "global.h"
+#include "main.h"
 
 #include <csignal>
 #include <cstdio>
@@ -24,58 +25,25 @@ Server *Server::Instance() {
   return m_pInstance;
 }
 
-void childKillTestSigHandler(int sig) {
-  sio_write((char *)(std::to_string(getpid()).c_str()));
-  sio_write((char *)(" was told to die.\n"));
-  Server::Instance()->stop();
-  _exit(0);
+void Server::shutdown() {
+  if (m_pInstance != nullptr) {
+    delete m_pInstance;
+  }
 }
 
-int Server::run(char *ip, char *port) {
+int Server::run(char *port) {
+  std::cout << "Server started  PID: " << getpid() << std::endl;
 
-  // if (signal(SIGINT, this->stop) == SIG_ERR)
-  //   unix_error((char *)("signal error"));
+  while (bRunning)
+    sleep(1);
 
-  // test
-  std::vector<pid_t> PIDS;
-  pid_t group_pid = getpid();
-
-  setgid(group_pid);
-
-  for (int i = 0; i < 10; i++) {
-    pid_t pid;
-
-    // make children
-    if ((pid = Fork()) == 0) {
-      setgid(group_pid);
-      if (signal(SIGUSR1, childKillTestSigHandler) == SIG_ERR)
-        unix_error((char *)("signal error"));
-
-      std::cout << getpid() << " is alive" << std::endl;
-
-      pause();
-      break;
-    }
-
-    PIDS.push_back(pid);
-  }
-
-  // now tell them all to DIE :D
-  for (int pid : PIDS) {
-    kill(pid, SIGUSR1);
-  }
-
+  std::cout << "Server stopped" << std::endl;
   return 0;
 }
 
-void Server::stop() {}
-
-void handleSigChild(int sig) {
-  int olderrno = errno;
-  while (waitpid(-1, NULL, 0) > 0)
-    sio_write((char *)("Reaped child"));
-  if (errno != ECHILD)
-    sio_error((char *)("waitpid error"));
-
-  errno = olderrno;
+void Server::setSigHandlers() {
+  if (signal(SIGINT, Server::handleExitSignal) == SIG_ERR)
+    unix_error((char *)("signal error"));
 }
+
+void Server::handleExitSignal(int sig) { bRunning = false; }

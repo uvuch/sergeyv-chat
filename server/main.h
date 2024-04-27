@@ -15,6 +15,4 @@ void setSigHandlers();
 void handleExitSignal(int sig);
 int handleServerParams(int, const char **, char *, char *);
 
-void server_stop();
-
 #endif // !MAIN_H
