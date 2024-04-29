@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include "global.h"
+#include "main.h"
 
 class Server {
 private:
@@ -10,11 +11,15 @@ private:
   ~Server(){};
 
   int open_listen(char *port);
+  void setSigHandlers();
+  static void handleExitSignal(int sig);
+
+  static bool bRunning;
 
 public:
   static Server *Instance();
-  int run(char *ip, char *port);
-  void stop();
+  static void shutdown();
+  int run(char *port);
 };
 
 #endif

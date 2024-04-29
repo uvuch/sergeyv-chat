@@ -3,6 +3,7 @@
 #include "server.h"
 #include <cctype>
 #include <cstring>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #define DEFAULT_IP "127.0.0.1"
@@ -24,11 +25,11 @@ int main(int argc, const char **argv) {
 
   setSigHandlers();
 
-  Server::Instance()->run(ip, port);
+  // Start server
+  Server::Instance()->run(port);
 
-  while (bRunning) {
-    sleep(1);
-  }
+  // After server returns
+  Server::shutdown();
 
   return 0;
 }
@@ -77,24 +78,4 @@ int handleServerParams(int argc, const char **argv, char *ipArg,
     }
 
   return 0;
-}
-
-void server_stop() {
-  if (Server::Instance()) {
-    Server::Instance()->stop();
-    free(Server::Instance());
-  }
-}
-
-void setSigHandlers() {
-  if (signal(SIGINT, handleExitSignal) == SIG_ERR)
-    unix_error((char *)("signal error"));
-}
-
-void handleExitSignal(int sig) {
-  if (bRunning)
-    server_stop();
-  bRunning = false;
-  sio_write((char *)("Got SIGINT\n"));
-  // _exit(0);
 }

@@ -1,5 +1,6 @@
 #include "server.h"
 #include "global.h"
+#include "main.h"
 
 #include <csignal>
 #include <cstdio>
@@ -26,34 +27,6 @@ Server *Server::Instance() {
 
   return m_pInstance;
 }
-
-int Server::run(char *ip, char *port) {
-
-  // if (signal(SIGINT, this->stop) == SIG_ERR)
-  //   unix_error((char *)("signal error"));
-
-  // test
-  std::vector<pid_t> PIDS;
-  pid_t group_pid = getpid();
-
-  setgid(group_pid);
-
-  for (int i = 0; i < 10; i++) {
-    pid_t pid;
-
-    // make children
-    if ((pid = Fork()) == 0) {
-      setgid(group_pid);
-      // child stuff
-    }
-
-    PIDS.push_back(pid);
-  }
-
-  return 0;
-}
-
-void Server::stop() {}
 
 int Server::open_listen(char *port) {
   struct addrinfo hints, *listp, *p;
@@ -91,3 +64,26 @@ int Server::open_listen(char *port) {
 
   return listenfd;
 }
+
+void Server::shutdown() {
+  if (m_pInstance != nullptr) {
+    delete m_pInstance;
+  }
+}
+
+int Server::run(char *port) {
+  std::cout << "Server started  PID: " << getpid() << std::endl;
+
+  while (bRunning)
+    sleep(1);
+
+  std::cout << "Server stopped" << std::endl;
+  return 0;
+}
+
+void Server::setSigHandlers() {
+  if (signal(SIGINT, Server::handleExitSignal) == SIG_ERR)
+    unix_error((char *)("signal error"));
+}
+
+void Server::handleExitSignal(int sig) { bRunning = false; }
