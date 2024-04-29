@@ -63,9 +63,11 @@ int Server::open_listen(char *port) {
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
   hints.ai_flags |= AI_NUMERICSERV;
-  getaddrinfo(NULL, port, &hints, &listp);
+  if (int err = getaddrinfo(NULL, port, &hints, &listp) != 0) {
+    std::cout << "Getaddrinfo error: " << gai_strerror(err) << std::endl;
+  }
 
-  for (p = listp; p; p->ai_next) {
+  for (p = listp; p; p = p->ai_next) {
     if ((listenfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
       continue; // Failed
 
