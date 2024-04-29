@@ -9,6 +9,8 @@ private:
   Server(){};
   ~Server(){};
 
+  int open_listen(char *port);
+
 public:
   static Server *Instance();
   int run(char *ip, char *port);

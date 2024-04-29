@@ -55,29 +55,37 @@ int Server::run(char *ip, char *port) {
 
 void Server::stop() {}
 
-void Server::ServerChild(char *ip, char *port) {
-  struct addrinfo *p, *listp, hints;
-  char buf[MAXLINE];
-  int rc, flags;
+int Server::open_listen(char *port) {
+  struct addrinfo hints, *listp, *p;
+  int listenfd, optval = 1;
 
   memset(&hints, 0, sizeof(struct addrinfo));
-
-  memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_socktype = SOCK_STREAM;
-  if ((rc = getaddrinfo(ip, NULL, &hints, &listp)) != 0) {
-    fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(rc));
-    _exit(1);
-  }
+  hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+  hints.ai_flags |= AI_NUMERICSERV;
+  getaddrinfo(NULL, port, &hints, &listp);
 
-  flags = NI_NUMERICHOST;
-  for (p = listp; p; p = p->ai_next) {
-    getnameinfo(p->ai_addr, p->ai_addrlen, buf, MAXLINE, NULL, 0, flags);
-    printf("%s\n", buf);
+  for (p = listp; p; p->ai_next) {
+    if ((listenfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
+      continue; // Failed
+
+    setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval,
+               sizeof(int));
+
+    if (bind(listenfd, p->ai_addr, p->ai_addrlen) == 0)
+      break; // Success
+
+    close(listenfd); // Bind failed
   }
 
   freeaddrinfo(listp);
+  if (!p) // No addresses worked
+    return -1;
 
-  exit(0);
+  if (listen(listenfd, MAXLINE) < 0) {
+    close(listenfd);
+    return -1;
+  }
+
+  return listenfd;
 }
