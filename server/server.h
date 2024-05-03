@@ -2,7 +2,8 @@
 #define SERVER_H
 
 #include "global.h"
-#include "main.h"
+
+struct rio_t;
 
 class Server {
 private:
@@ -13,8 +14,15 @@ private:
   int open_listen(char *port);
   void setSigHandlers();
   static void handleExitSignal(int sig);
+  int Fork();
+  void serverClientConnection(int listenfd);
+
+  void echo(int connfd);
+  void rio_readinitb(rio_t *rp, int fd);
+  ssize_t rio_written(int fd, void *userbuf, size_t n);
 
   static bool bRunning;
+  int pid = 0;
 
 public:
   static Server *Instance();
