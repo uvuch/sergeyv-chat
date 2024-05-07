@@ -38,6 +38,8 @@ int Server::run(char *port) {
   while (bRunning && !isChild) { // Not Child
     if ((listenfd = open_listen(port)) > 0)
       continue; // If nothing found
+    else
+      break;
 
     // is Child
     int pid = 0;
