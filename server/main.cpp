@@ -23,8 +23,6 @@ int main(int argc, const char **argv) {
 
   std::cout << "Ip: " << ip << "  Port: " << port << std::endl;
 
-  setSigHandlers();
-
   // Start server
   Server::Instance()->run(port);
 

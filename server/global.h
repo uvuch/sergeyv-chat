@@ -9,13 +9,24 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// Next 3 stolen from csapp
+// Stolen from csapp
 // ------------------ //
+struct rio_t;
+
 ssize_t sio_put(char *msg);
 
 void sio_error(char *msg);
 
 void unix_error(char *msg);
+
+void echo(int connfd);
+
+void rio_readinitb(rio_t *rp, int fd);
+
+ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen);
+
+ssize_t rio_written(int fd, void *userbuf, size_t n);
+
 // ------------------ //
 
 ssize_t sio_write(char *msg);
