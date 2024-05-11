@@ -123,6 +123,8 @@ void Server::shutdown() {
 void Server::setSigHandlers() {
   if (signal(SIGINT, Server::handleExitSignal) == SIG_ERR)
     unix_error((char *)("signal error"));
+  if (signal(SIGCHLD, Server::handleChildSignal) == SIG_ERR)
+    unix_error((char *)("child error"));
 }
 
 void Server::handleExitSignal(int sig) { bRunning = false; }
@@ -131,6 +133,6 @@ void Server::handleChildSignal(int sig) {
   int status, pid;
   while ((pid = wait(&status)) > 0) {
     if (WIFSTOPPED(status))
-      sio_write((char *)("Child culled\n"));
+      sio_write((char *)("Child culled"));
   }
 }
