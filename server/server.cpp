@@ -126,3 +126,11 @@ void Server::setSigHandlers() {
 }
 
 void Server::handleExitSignal(int sig) { bRunning = false; }
+
+void Server::handleChildSignal(int sig) {
+  int status, pid;
+  while ((pid = wait(&status)) > 0) {
+    if (WIFSTOPPED(status))
+      sio_write((char *)("Child culled\n"));
+  }
+}

@@ -14,6 +14,7 @@ private:
   int open_listen(char *port);
   void setSigHandlers();
   static void handleExitSignal(int sig);
+  static void handleChildSignal(int sig);
   void serverClientConnection(int listenfd);
 
   static bool bRunning;
