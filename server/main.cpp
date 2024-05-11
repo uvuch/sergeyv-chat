@@ -29,6 +29,8 @@ int main(int argc, const char **argv) {
   // After server returns
   Server::shutdown();
 
+  std::cout << "Server shutdown" << std::endl;
+
   return 0;
 }
 

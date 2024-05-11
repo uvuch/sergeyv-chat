@@ -16,11 +16,14 @@
 
 #define MAXLINE 1024
 #define RIO_BUFFSIZE 8192
+#define MAX_CHILD_SIZE 100
 
 // NUll the instance at start
 Server *Server::m_pInstance = nullptr;
 bool Server::bRunning = true;
+int Server::globalListenfd = 0;
 bool Server::alreadyExiting = false;
+int Server::childrenCount = 0;
 int Server::childrenQuit = 0;
 
 Server *Server::Instance() {
@@ -41,30 +44,39 @@ int Server::run(char *port) {
 
   while (bRunning && !isChild) { // Not Child
     // if open_listen returned fd fork
-    if ((listenfd = open_listen(port)) <= 0)
+
+    if (childrenCount >= MAX_CHILD_SIZE)
+      continue;
+    if ((globalListenfd = listenfd = open_listen(port)) <= 0)
       continue;
     // Else do everything below
 
     // At this point you are  confirmed to become a child
     int pid = 0;
+    childrenCount++;
     if ((pid = fork()) == 0) {
       // Set group id
       setgid(gid);
       isChild = true;
+    } else {
+      childPIDs.push_back(pid);
     }
   }
 
   // Broke out of main loop, do child function now
-  if (bRunning && isChild)
+  if (isChild)
     serverClientConnection(listenfd);
+  // Server operand only
 
-  // Server is going down, get rid of children
-  reapChildren(childPIDs);
+  if (!isChild) {
+    // Server is going down, get rid of children
+    reapChildren(childPIDs);
 
-  // While we wait for children to go, just sit around
-  // Once child return check if all children return, exit if true
-  while (childPIDs.size() > childrenQuit) {
-    pause();
+    // While we wait for children to go, just sit around
+    // Once child return check if all children return, exit if true
+    while (childPIDs.size() > childrenQuit && childrenCount) {
+      pause();
+    }
   }
 
   return 0;
@@ -108,8 +120,11 @@ int Server::open_listen(char *port) {
   struct sockaddr_storage clientaddr;
   char client_hostname[MAXLINE], client_port[MAXLINE];
 
-  // Listenfd is now clientfd
+  // Listenfd is now clientfdq
   listenfd = accept(listenfd, (sockaddr *)&clientaddr, &clientlen);
+  if (listenfd == -1)
+    return listenfd;
+
   getnameinfo((sockaddr *)&clientaddr, clientlen, client_hostname, MAXLINE,
               client_port, MAXLINE, 0);
   printf("%d: Connected to (%s, %s)\n", getpid(), client_hostname, client_port);
@@ -129,7 +144,7 @@ void Server::serverClientConnection(int connfd) {
 // Send quit signal to children
 void Server::reapChildren(std::vector<int> childPIDs) {
   for (int pid : childPIDs) {
-    kill(SIGQUIT, pid);
+    kill(pid, SIGQUIT);
   }
 }
 
@@ -145,15 +160,19 @@ void Server::setSigHandlers() {
   if (signal(SIGQUIT, Server::handleQuitSignal) == SIG_ERR)
     unix_error((char *)("signal error"));
   if (signal(SIGCHLD, Server::handleChildSignal) == SIG_ERR)
-    unix_error((char *)("child error"));
+    unix_error((char *)("signal error"));
 }
 
 void Server::handleExitSignal(int sig) {
   bRunning = false;
 
+  // Shutdown all incoming and outgoing connections with the server parent
+  if (globalListenfd)
+    ::shutdown(globalListenfd, SHUT_RDWR);
+
   // For when you need to kill a stalled kill process
-  if (!alreadyExiting) {
-    // KILL THIS AND THE CHILDREN NOW!
+  if (alreadyExiting) {
+    // KILL THIS AND CHILDREN NOW!
     kill(0, SIGKILL);
   }
 
@@ -163,12 +182,12 @@ void Server::handleExitSignal(int sig) {
 void Server::handleChildSignal(int sig) {
   int status, pid;
   while ((pid = wait(&status)) > 0) {
-    childrenQuit += 1;
+    childrenQuit++;
+    childrenCount--;
 
-    if (WIFSTOPPED(status))
+    if (WIFEXITED(status))
       sio_write((char *)("Child culled"));
   }
 }
 
-// Is this even needed
 void Server::handleQuitSignal(int sig) { bRunning = false; }

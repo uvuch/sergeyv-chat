@@ -21,7 +21,9 @@ private:
   void reapChildren(std::vector<int> childPIDs);
 
   static bool bRunning;
+  static int globalListenfd;
   static bool alreadyExiting;
+  static int childrenCount;
   static int childrenQuit;
 
 public:
