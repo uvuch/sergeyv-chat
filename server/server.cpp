@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <vector>
 
 #define MAXLINE 1024
 #define RIO_BUFFSIZE 8192
@@ -19,6 +20,8 @@
 // NUll the instance at start
 Server *Server::m_pInstance = nullptr;
 bool Server::bRunning = true;
+bool Server::alreadyExiting = false;
+int Server::childrenQuit = 0;
 
 Server *Server::Instance() {
   if (m_pInstance == nullptr)
@@ -34,14 +37,15 @@ int Server::run(char *port) {
   bool isChild = false;
 
   gid_t gid = getgid();
+  std::vector<int> childPIDs;
 
   while (bRunning && !isChild) { // Not Child
-    if ((listenfd = open_listen(port)) > 0)
-      continue; // If nothing found
-    else
-      break;
+    // if open_listen returned fd fork
+    if ((listenfd = open_listen(port)) <= 0)
+      continue;
+    // Else do everything below
 
-    // is Child
+    // At this point you are  confirmed to become a child
     int pid = 0;
     if ((pid = fork()) == 0) {
       // Set group id
@@ -54,7 +58,15 @@ int Server::run(char *port) {
   if (bRunning && isChild)
     serverClientConnection(listenfd);
 
-  std::cout << "Server stopped" << std::endl;
+  // Server is going down, get rid of children
+  reapChildren(childPIDs);
+
+  // While we wait for children to go, just sit around
+  // Once child return check if all children return, exit if true
+  while (childPIDs.size() > childrenQuit) {
+    pause();
+  }
+
   return 0;
 }
 
@@ -114,6 +126,13 @@ void Server::serverClientConnection(int connfd) {
   // If exits the connection is over
 }
 
+// Send quit signal to children
+void Server::reapChildren(std::vector<int> childPIDs) {
+  for (int pid : childPIDs) {
+    kill(SIGQUIT, pid);
+  }
+}
+
 void Server::shutdown() {
   if (m_pInstance != nullptr) {
     delete m_pInstance;
@@ -129,11 +148,23 @@ void Server::setSigHandlers() {
     unix_error((char *)("child error"));
 }
 
-void Server::handleExitSignal(int sig) { bRunning = false; }
+void Server::handleExitSignal(int sig) {
+  bRunning = false;
+
+  // For when you need to kill a stalled kill process
+  if (!alreadyExiting) {
+    // KILL THIS AND THE CHILDREN NOW!
+    kill(0, SIGKILL);
+  }
+
+  alreadyExiting = true;
+}
 
 void Server::handleChildSignal(int sig) {
   int status, pid;
   while ((pid = wait(&status)) > 0) {
+    childrenQuit += 1;
+
     if (WIFSTOPPED(status))
       sio_write((char *)("Child culled"));
   }

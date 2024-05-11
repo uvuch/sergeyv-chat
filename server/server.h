@@ -2,6 +2,7 @@
 #define SERVER_H
 
 #include "global.h"
+#include <vector>
 
 struct rio_t;
 
@@ -17,8 +18,11 @@ private:
   static void handleChildSignal(int sig);
   static void handleQuitSignal(int sig);
   void serverClientConnection(int listenfd);
+  void reapChildren(std::vector<int> childPIDs);
 
   static bool bRunning;
+  static bool alreadyExiting;
+  static int childrenQuit;
 
 public:
   static Server *Instance();
