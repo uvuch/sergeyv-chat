@@ -123,6 +123,8 @@ void Server::shutdown() {
 void Server::setSigHandlers() {
   if (signal(SIGINT, Server::handleExitSignal) == SIG_ERR)
     unix_error((char *)("signal error"));
+  if (signal(SIGQUIT, Server::handleQuitSignal) == SIG_ERR)
+    unix_error((char *)("signal error"));
   if (signal(SIGCHLD, Server::handleChildSignal) == SIG_ERR)
     unix_error((char *)("child error"));
 }
@@ -136,3 +138,6 @@ void Server::handleChildSignal(int sig) {
       sio_write((char *)("Child culled"));
   }
 }
+
+// Is this even needed
+void Server::handleQuitSignal(int sig) { bRunning = false; }
