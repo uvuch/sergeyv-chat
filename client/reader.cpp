@@ -10,7 +10,7 @@
 bool bRunning = true;
 
 int main(int argc, char *argv[]) {
-  char ip[CHAR_SIZE_OF_IP], port[CHAR_SIZE_OF_PORT] = {};
+  char ip[CHAR_SIZE_OF_IP], port[CHAR_SIZE_OF_PORT];
 
   if (argc != 3) {
     std::cout << argv[0] << "<ip> <port>" << std::endl;
