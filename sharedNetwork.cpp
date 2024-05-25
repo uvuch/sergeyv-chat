@@ -4,6 +4,7 @@
 #define CHAR_SIZE_OF_PORT 6
 #define MAXLINE 100
 
+#include "sharedNetwork.h"
 #include <iostream>
 #include <regex>
 
