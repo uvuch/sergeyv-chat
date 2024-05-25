@@ -16,33 +16,41 @@ int client_listen() {
 }
 
 int handle_ip(char *ip, char *copyTo) {
-  const std::regex rIp("^\\d{1,3}\\.)\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
+  try {
+    const std::regex rIp("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
 
-  // False
-  if (!std::regex_match(ip, rIp, std::regex_constants::match_any)) {
-    std::cout << "IP is incorrect! Format: 255.255.255.255 " << std::endl;
-    return -1;
+    // False
+    if (!std::regex_search(ip, rIp)) {
+      std::cout << "IP is incorrect! Format: 255.255.255.255 " << std::endl;
+      return -1;
+    }
+
+    // True
+    std::strncpy(copyTo, ip, CHAR_SIZE_OF_IP);
+  } catch (const std::regex_error &e) {
+    std::cout << "Regex error: " << e.what() << std::endl;
   }
-
-  // True
-  std::strncpy(copyTo, ip, CHAR_SIZE_OF_IP);
 
   return 0;
 }
 
 int handle_port(char *port, char *copyTo) {
-  const std::regex rPort("^\\d{1,5}$");
+  try {
+    const std::regex rPort("^\\d{1,5}$");
 
-  // False
-  if (!std::regex_match(port, rPort, std::regex_constants::match_any)) {
-    std::cout << "Port is incorrect! Format : 54321 [1 - 5 characters]"
-              << std::endl;
+    // False
+    if (!std::regex_match(port, rPort)) {
+      std::cout << "Port is incorrect! Format : 54321 [1 - 5 characters]"
+                << std::endl;
 
-    return -1;
+      return -1;
+    }
+
+    // True
+    std::strncpy(copyTo, port, CHAR_SIZE_OF_PORT);
+
+  } catch (const std::regex_error &e) {
+    std::cout << "Regex error: " << e.what() << std::endl;
   }
-
-  // True
-  std::strncpy(copyTo, port, CHAR_SIZE_OF_PORT);
-
   return 0;
 }

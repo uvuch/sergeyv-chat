@@ -10,34 +10,16 @@
 bool bRunning = true;
 
 int main(int argc, char *argv[]) {
-  char ip[CHAR_SIZE_OF_IP], port[CHAR_SIZE_OF_PORT];
+  char ip[CHAR_SIZE_OF_IP], port[CHAR_SIZE_OF_PORT] = {};
 
   if (argc != 3) {
-    std::cout << "./" << argv[0] << "<ip> <port>" << std::endl;
+    std::cout << argv[0] << "<ip> <port>" << std::endl;
     return -1;
   } else {
-    if (handle_ip(argv[1], ip) > 0 || handle_port(argv[2], port) > 0) {
+    if (handle_ip(argv[1], ip) < 0 || handle_port(argv[2], port) < 0) {
       bRunning = false;
       return -1;
     }
-    /*
-    const std::regex rIp("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
-    const std::regex rPort("^\\d{1,5}$");
-    std::smatch matches;
-
-    if (std::regex_match(argv[1], rIp, std::regex_constants::match_any))
-      strncpy(ip, argv[1], CHAR_SIZE_OF_IP);
-    else {
-      std::cout << "Ip not valid!" << std::endl;
-      return -1;
-    }
-    if (std::regex_match(argv[2], rPort, std::regex_constants::match_any))
-      strncpy(port, argv[2], CHAR_SIZE_OF_PORT);
-    else {
-      std::cout << "Port not valid!" << std::endl;
-      return -1;
-  }
-    */
   }
 
   std::cout << "IP: " << ip << ";   Port: " << port << ";" << std::endl;
