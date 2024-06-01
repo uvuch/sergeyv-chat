@@ -1,24 +1,19 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "global.h"
-#include "main.h"
-
 class Server {
+public:
+  static Server *instance();
+  static void shutdown();
+  static void stop(int);
+  void run(int port);
+
 private:
   static Server *m_pInstance;
+  static volatile bool m_bQuitCommand;
+
   Server(){};
   ~Server(){};
-
-  void setSigHandlers();
-  static void handleExitSignal(int sig);
-
-  static bool bRunning;
-
-public:
-  static Server *Instance();
-  static void shutdown();
-  int run(char *port);
 };
 
 #endif

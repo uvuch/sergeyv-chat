@@ -1,24 +1,12 @@
-#include "server.h"
-#include "global.h"
-#include "main.h"
-
-#include <csignal>
-#include <cstdio>
-#include <errno.h>
 #include <iostream>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <signal.h>
 #include <unistd.h>
-#include <vector>
+#include "server.h"
 
-// NUll the instance at start
 Server *Server::m_pInstance = nullptr;
+volatile bool Server::m_bQuitCommand = false;
 
-Server *Server::Instance() {
+Server *Server::instance() {
   if (m_pInstance == nullptr)
     m_pInstance = new Server;
 
@@ -26,24 +14,23 @@ Server *Server::Instance() {
 }
 
 void Server::shutdown() {
-  if (m_pInstance != nullptr) {
-    delete m_pInstance;
+  if (m_pInstance != nullptr) delete m_pInstance;
+}
+
+void Server::stop(int sig) {
+  m_bQuitCommand = true;
+}
+
+void Server::run(int port) {
+  if (signal(SIGINT, Server::stop) == SIG_ERR) {
+    std::cout << "Server initialization error (signal handler could not be assigned)!" << std::endl;
+    return;
   }
+
+  std::cout << "Starting server listening on a port " << port << std::endl;
+  while (!m_bQuitCommand) {
+    pause();
+  }
+
+  std::cout << "\nServer stopped" << std::endl;
 }
-
-int Server::run(char *port) {
-  std::cout << "Server started  PID: " << getpid() << std::endl;
-
-  while (bRunning)
-    sleep(1);
-
-  std::cout << "Server stopped" << std::endl;
-  return 0;
-}
-
-void Server::setSigHandlers() {
-  if (signal(SIGINT, Server::handleExitSignal) == SIG_ERR)
-    unix_error((char *)("signal error"));
-}
-
-void Server::handleExitSignal(int sig) { bRunning = false; }

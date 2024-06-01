@@ -1,81 +1,48 @@
-#include "main.h"
-#include "global.h"
-#include "server.h"
-#include <cctype>
-#include <cstring>
-#include <sys/socket.h>
-#include <unistd.h>
+#include <iostream>
+#include <stdlib.h>
 
-#define DEFAULT_IP "127.0.0.1"
-#define DEFAULT_PORT "54321"
-#define CHAR_SIZE_OF_IP 16
-#define CHAR_SIZE_OF_PORT 6
-#define MAXLINE 100
+#define DEFAULT_PORT 54321
 
-bool bRunning = true;
+/****************************************************************************************************
+  Reads command line arguments.
+  Returns a default port number if no arguments provided.
+  Otherwise it returns an integer port number or -1 if the argument can not be translated as a number.
+*/
+int getPort(int, const char**);
 
+
+/****************************************************************************************************
+  Validates the string can be used as a port number
+  Returns true if the string consists of digits only.
+*/
+bool portNumberValid(const char*)
+
+/****************************************************************************************************/
 int main(int argc, const char **argv) {
-
-  char ip[CHAR_SIZE_OF_IP] = DEFAULT_IP, port[CHAR_SIZE_OF_PORT] = DEFAULT_PORT;
-
-  if (handleServerParams(argc, argv, ip, port) < 0)
-    _exit(0);
-
-  std::cout << "Ip: " << ip << "  Port: " << port << std::endl;
-
-  setSigHandlers();
-
-  // Start server
-  Server::Instance()->run(port);
-
-  // After server returns
-  Server::shutdown();
-
-  return 0;
-}
-
-int checkAndCopyPortArg(int argc, const char *argv, char *portArg) {
-  bool itsANumber = true;
-  for (int i = 0; i < strlen(argv); i++) {
-    if (!std::isdigit(argv[i])) {
-      itsANumber = false;
-      break;
-    }
-
-    if (itsANumber)
-      std::strncpy(portArg, argv, CHAR_SIZE_OF_PORT - 1);
-
-    else {
-      std::cout << "Port should be a valid positive numeric value" << std::endl;
-      return -1;
-    }
+  int port = getPort(argc, argv);
+  if (port < 0) {
+    std::cout << "Error: invalid port number" << std::endl;
+    return  -1;
   }
 
+  Server::instance()->run(port);
+
+  Server::shutdown();
   return 0;
 }
 
-int handleServerParams(int argc, const char **argv, char *ipArg,
-                       char *portArg) {
-  if (argc == 2) {
-    if (checkAndCopyPortArg(argc, argv[1], portArg) < 0)
-      return -1;
-  } else
-    for (int i = 1; i < argc; i++) {
-      if (i + 1 < argc) {
-        // Ip
-        if (std::strcmp("-ip", argv[i]) == 0) {
-          std::strncpy(ipArg, argv[i + 1], CHAR_SIZE_OF_IP - 1);
-          continue;
-        }
+bool portNumberValid(const char *pPortStr) {
+  for(int i = 0; i < strlen(pPortStr); ++i)
+    if (pPortStr[i] < '0' || pPortStr[i] > '9') return false;
 
-        // Port
-        // Make sure that port is not negative!
-        if (std::strcmp("-p", argv[i]) == 0) {
-          if (checkAndCopyPortArg(argc, argv[i + 1], portArg) < 0)
-            return -1;
-        }
-      }
-    }
+  return true;
+}
 
-  return 0;
+int getPort(int argc, const char **argv) {
+  if (argc < 2) return DEFAULT_PORT;
+
+  const char *pPortArg = argv[1];
+  if (!portNumberValid(pPortArg)) return -1;
+
+  return atoi(pPortArg);
 }
