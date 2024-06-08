@@ -1,6 +1,7 @@
 #include "server.h"
 #include <arpa/inet.h>
 #include <cerrno>
+#include <cstring>
 #include <errno.h>
 #include <iostream>
 #include <map>
@@ -14,6 +15,7 @@
 
 Server *Server::m_pInstance = nullptr;
 volatile bool Server::m_bQuitCommand = false;
+int Server::serverSocket = 0;
 
 Server *Server::instance() {
   if (m_pInstance == nullptr)
@@ -27,7 +29,10 @@ void Server::shutdown() {
     delete m_pInstance;
 }
 
-void Server::stop(int sig) { m_bQuitCommand = true; }
+void Server::stop(int sig) {
+  m_bQuitCommand = true;
+  close(serverSocket);
+}
 
 void Server::run(int port) {
   if (signal(SIGINT, Server::stop) == SIG_ERR) {
@@ -41,22 +46,19 @@ void Server::run(int port) {
   std::cout << "Max connections: " << MAXCONNECTIONS << std::endl;
 
   // Get a server socket
-  int serverSocket = create_server(port);
+  serverSocket = create_server(port);
   if (serverSocket == -1) {
-    m_bQuitCommand = true;
     return;
-  }
-
-  // Set up for listening
-  if (connection_listen(serverSocket) == -1) {
-    m_bQuitCommand = true;
   }
 
   std::map<int, char *> connectedClients;
 
   // Processing requests
+  int clientfd = 0;
   while (!m_bQuitCommand) {
-    connection_listen(serverSocket);
+    clientfd = accept_connections(serverSocket);
+    if (clientfd == -1)
+      m_bQuitCommand = true;
   }
 
   close(serverSocket);
@@ -68,7 +70,7 @@ void Server::run(int port) {
 int Server::create_server(int port) {
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (serverSocket == -1) {
-    std::cout << "Could not create socket!" << std::endl;
+    std::cout << "Could not create socket: " << strerror(errno) << std::endl;
   }
 
   sockaddr_in addr;
@@ -80,23 +82,18 @@ int Server::create_server(int port) {
   addr.sin_port = htons(port);
   addr.sin_addr.s_addr = INADDR_ANY;
 
-  if (bind(serverSocket, (const sockaddr *)&addr, socketaddr_size) < 0) {
+  if (bind(serverSocket, (const sockaddr *)&addr, socketaddr_size) == -1) {
     close(serverSocket);
     std::cout << "Could not bind socket: " << strerror(errno) << std::endl;
     return -1;
   }
 
-  return serverSocket;
-}
-
-int Server::connection_listen(int serverSocket) {
   if (listen(serverSocket, MAXCONNECTIONS) == -1) {
     std::cout << "Connection listen failed: " << strerror(errno) << std::endl;
     return -1;
   }
 
-  // Setup for listening is a success
-  return 0;
+  return serverSocket;
 }
 
 int Server::accept_connections(int serverSocket) {
@@ -108,13 +105,10 @@ int Server::accept_connections(int serverSocket) {
   int client_connection =
       accept(serverSocket, (sockaddr *)&clientAddr, &addr_size);
 
-  // No connections
-  if (client_connection == 0)
-    return 0;
-
   // Error during connection
   if (client_connection == -1) {
-    std::cout << "Connection accept failed: " << strerror(errno) << std::endl;
+    if (!m_bQuitCommand)
+      std::cout << "Connection accept failed: " << strerror(errno) << std::endl;
     return -1;
   }
 
@@ -127,6 +121,7 @@ int Server::accept_connections(int serverSocket) {
 }
 
 void Server::insertClient(int clientfd, char *charIp) {
+  // Pretend I put it into the Database....
   connectedClients[clientfd] = charIp;
 }
 
