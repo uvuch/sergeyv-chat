@@ -45,6 +45,8 @@ void Server::run(int port) {
   std::cout << "Starting server listening on a port " << port << std::endl;
   std::cout << "Max connections: " << MAXCONNECTIONS << std::endl;
 
+  isChild = false;
+
   // Get a server socket
   serverSocket = create_server(port);
   if (serverSocket == -1) {
@@ -55,10 +57,16 @@ void Server::run(int port) {
 
   // Processing requests
   int clientfd = 0;
-  while (!m_bQuitCommand) {
+  while (!m_bQuitCommand && !isChild) {
     clientfd = accept_connections(serverSocket);
-    if (clientfd == -1)
+    if (clientfd == -1) {
       m_bQuitCommand = true;
+      break;
+    }
+
+    // Child fork, true if child
+    if (Fork())
+      isChild = true;
   }
 
   close(serverSocket);
@@ -67,6 +75,7 @@ void Server::run(int port) {
 
   std::cout << "\nServer stopped" << std::endl;
 }
+
 int Server::create_server(int port) {
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (serverSocket == -1) {
@@ -96,6 +105,8 @@ int Server::create_server(int port) {
   return serverSocket;
 }
 
+// TODO Make fork stuff
+
 int Server::accept_connections(int serverSocket) {
   sockaddr_in clientAddr;
   socklen_t addr_size = 0;
@@ -123,6 +134,23 @@ int Server::accept_connections(int serverSocket) {
 void Server::insertClient(int clientfd, char *charIp) {
   // Pretend I put it into the Database....
   connectedClients[clientfd] = charIp;
+}
+bool Server::Fork() {
+  int pid = fork();
+
+  // Error
+  if (pid == -1) {
+    std::cout << "Fork failed: " << strerror(errno) << std::endl;
+    return -1;
+  }
+
+  // Is Child
+  if (pid == 0)
+    return true;
+
+  // Is parent
+  procChildren.push_back(pid);
+  return false;
 }
 
 void Server::popClient(int clientfd) { connectedClients.erase(clientfd); }

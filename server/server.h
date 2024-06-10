@@ -17,6 +17,11 @@ private:
   int create_server(int port);
   int accept_connections(int serverSocket);
 
+  /** True if is child */
+  bool Fork();
+  bool isChild;
+
+  std::vector<int> procChildren;
   std::map<int, char *> connectedClients;
   void insertClient(int clientfd, char *charIp);
   void popClient(int clientfd);
