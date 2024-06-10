@@ -69,9 +69,30 @@ void Server::run(int port) {
       isChild = true;
   }
 
+  if (isChild) {
+    char buf[MAXLINE];
+    memset(&buf, 0, MAXLINE);
+
+    int bytesSent = 0;
+
+    while (!m_bQuitCommand) {
+      bytesSent = receiveMessage(clientfd, (char *)&buf);
+      if (bytesSent == -1) {
+        m_bQuitCommand = true;
+        break;
+      }
+
+      spreadMessage((char *)&buf, bytesSent);
+    }
+  }
+
   close(serverSocket);
 
-  connectedClients.clear();
+  if (!isChild)
+    connectedClients.clear();
+  // else
+  // theoretical code
+  // connectedClientsDB->remove(clientfd);
 
   std::cout << "\nServer stopped" << std::endl;
 }
@@ -135,6 +156,9 @@ void Server::insertClient(int clientfd, char *charIp) {
   // Pretend I put it into the Database....
   connectedClients[clientfd] = charIp;
 }
+
+void Server::popClient(int clientfd) { connectedClients.erase(clientfd); }
+
 bool Server::Fork() {
   int pid = fork();
 
@@ -153,4 +177,25 @@ bool Server::Fork() {
   return false;
 }
 
-void Server::popClient(int clientfd) { connectedClients.erase(clientfd); }
+int Server::receiveMessage(int readerClientfd, char *buf) {
+  int readBytes = recv(readerClientfd, &buf, MAXLINE, 0);
+  if (readBytes == -1) {
+    std::cout << "Client side conenction disconnected: " << strerror(errno)
+              << std::endl;
+    return -1;
+  }
+
+  return readBytes;
+}
+
+void spreadMessage(char *message, int bytesOfMessage) {
+  // pheodo code
+  // int bytesSent = 0;
+  // for (itterator i = connectedClientsDB.begin; i != connectedClientsDB.end;
+  // i++) {
+  //  bytesSent = send(i.socket, message, bytesOfMessage, 0);
+  //  if (bytesSent == -1) {
+  //   std::cout << "Send failed: " << strerror(errno) << std::endl;
+  //  }
+  // }
+}

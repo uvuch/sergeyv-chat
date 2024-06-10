@@ -18,8 +18,11 @@ private:
   int accept_connections(int serverSocket);
 
   /** True if is child */
-  bool Fork();
   bool isChild;
+  bool Fork();
+
+  int receiveMessage(int clientfd, char *buf);
+  void spreadMessage(char *message, int bytesOfMessage);
 
   std::vector<int> procChildren;
   std::map<int, char *> connectedClients;
