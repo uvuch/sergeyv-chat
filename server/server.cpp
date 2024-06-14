@@ -188,7 +188,7 @@ int Server::receiveMessage(int readerClientfd, char *buf) {
   return readBytes;
 }
 
-void spreadMessage(char *message, int bytesOfMessage) {
+void Server::spreadMessage(char *message, int bytesOfMessage) {
   // pheodo code
   // int bytesSent = 0;
   // for (itterator i = connectedClientsDB.begin; i != connectedClientsDB.end;
