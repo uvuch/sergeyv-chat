@@ -1,8 +1,10 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "dbconnector.h"
 #include <map>
 #include <vector>
+
 class Server {
 public:
   static Server *instance();
@@ -14,6 +16,7 @@ public:
 
 private:
   static Server *m_pInstance;
+  DBConnector *dbconn;
   int create_server(int port);
   int accept_connections(int serverSocket);
 

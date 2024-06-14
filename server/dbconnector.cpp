@@ -1,11 +1,5 @@
 #include "dbconnector.h"
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
 #include <cstdlib>
-#include <mysql_connection.h>
-#include <string>
 
 // DBConnector *DBConnector::m_pInstance = nullptr;
 
@@ -51,9 +45,13 @@ int DBConnector::addClientReader(int clientfd) {
     return EXIT_FAILURE;
 
   try {
-    sql::ResultSet *res;
+    if (res)
+      delete res;
+
     res = stmt->executeQuery("INSERT into readersTable (clientfd) VALUES (" +
                              std::to_string(clientfd) + ")");
+
+    delete res;
 
     return 0;
 
@@ -72,10 +70,13 @@ int DBConnector::addClientWriter(int clientfd) {
     return EXIT_FAILURE;
 
   try {
-    sql::ResultSet *res;
+    if (res)
+      delete res;
+
     res = stmt->executeQuery("INSERT into writersTable (clientfd) VALUES (" +
                              std::to_string(clientfd) + ")");
 
+    delete res;
     return 0;
 
   } catch (sql::SQLException &e) {
@@ -85,5 +86,43 @@ int DBConnector::addClientWriter(int clientfd) {
     std::cout << "SQLState: " << e.getSQLState() << " )" << std::endl;
 
     return -1;
+  }
+}
+
+sql::ResultSet *DBConnector::getClientReaders() {
+  try {
+    if (res)
+      delete res;
+
+    res = stmt->executeQuery("SELECT * from readersTable AS _message");
+
+    return res;
+
+  } catch (sql::SQLException &e) {
+    std::cout << "SQLException in " << __FILE__ << std::endl;
+    std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+    std::cout << "# ERR: " << e.what() << std::endl;
+    std::cout << "SQLState: " << e.getSQLState() << " )" << std::endl;
+
+    return nullptr;
+  }
+}
+
+sql::ResultSet *DBConnector::getClientWriters() {
+  try {
+    if (res)
+      delete res;
+
+    res = stmt->executeQuery("SELECT * from writersTable AS _message");
+
+    return res;
+
+  } catch (sql::SQLException &e) {
+    std::cout << "SQLException in " << __FILE__ << std::endl;
+    std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+    std::cout << "# ERR: " << e.what() << std::endl;
+    std::cout << "SQLState: " << e.getSQLState() << " )" << std::endl;
+
+    return nullptr;
   }
 }

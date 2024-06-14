@@ -1,5 +1,7 @@
 #include "server.h"
+#include "dbconnector.h"
 #include <arpa/inet.h>
+#include <cassert>
 #include <cerrno>
 #include <cstring>
 #include <errno.h>
@@ -70,6 +72,8 @@ void Server::run(int port) {
   }
 
   if (isChild) {
+    dbconn = new DBConnector;
+
     char buf[MAXLINE];
     memset(&buf, 0, MAXLINE);
 
@@ -84,6 +88,8 @@ void Server::run(int port) {
 
       spreadMessage((char *)&buf, bytesSent);
     }
+
+    delete dbconn;
   }
 
   close(serverSocket);
@@ -198,4 +204,19 @@ void Server::spreadMessage(char *message, int bytesOfMessage) {
   //   std::cout << "Send failed: " << strerror(errno) << std::endl;
   //  }
   // }
+  int bytesSent = 0;
+  sql::ResultSet *res = dbconn->getClientReaders();
+
+  if (!res) {
+    delete res;
+    return;
+  }
+
+  while (res->next()) {
+    bytesSent = send(res->getInt("_message"), message, bytesOfMessage, 0);
+    if (bytesSent == -1) {
+      std::cout << "Send failed for Writter: " << res->getInt("_message")
+                << ": " << strerror(errno) << std::endl;
+    }
+  }
 }
