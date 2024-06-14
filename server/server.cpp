@@ -1,5 +1,5 @@
 #include "server.h"
-#include "dbconnector.h"
+#include "dbconnector.cpp"
 #include <arpa/inet.h>
 #include <cassert>
 #include <cerrno>
