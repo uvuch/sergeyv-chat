@@ -1,5 +1,6 @@
 #include "dbconnector.h"
 #include <cstdlib>
+#include <string>
 
 // DBConnector *DBConnector::m_pInstance = nullptr;
 
@@ -15,7 +16,8 @@ void DBConnector::shutdown() {
     delete con;
 }
 
-int DBConnector::connect(char *port, char *user, char *password) {
+int DBConnector::connect(const char *port, const char *user,
+                         const char *password) {
   try {
     driver = get_driver_instance();
 
@@ -124,5 +126,46 @@ sql::ResultSet *DBConnector::getClientWriters() {
     std::cout << "SQLState: " << e.getSQLState() << " )" << std::endl;
 
     return nullptr;
+  }
+}
+
+int DBConnector::removeClientReader(int clientfd) {
+  try {
+    if (res)
+      delete res;
+
+    // Just assuming it will succeed right now;
+    res = stmt->executeQuery("DELETE FROM readersTable VALUE clientfd='" +
+                             std::to_string(clientfd) + "'");
+
+    return 0;
+
+  } catch (sql::SQLException &e) {
+    std::cout << "SQLException in " << __FILE__ << std::endl;
+    std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+    std::cout << "# ERR: " << e.what() << std::endl;
+    std::cout << "SQLState: " << e.getSQLState() << " )" << std::endl;
+
+    return -1;
+  }
+}
+
+int DBConnector::removeClientWriter(int clientfd) {
+  try {
+    if (res)
+      delete res;
+
+    // Just assuming it will succeed right now;
+    res = stmt->executeQuery("DELETE FROM readersTable VALUE clientfd='" +
+                             std::to_string(clientfd) + "'");
+
+    return 0;
+  } catch (sql::SQLException &e) {
+    std::cout << "SQLException in " << __FILE__ << std::endl;
+    std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+    std::cout << "# ERR: " << e.what() << std::endl;
+    std::cout << "SQLState: " << e.getSQLState() << " )" << std::endl;
+
+    return -1;
   }
 }

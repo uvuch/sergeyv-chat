@@ -3,6 +3,7 @@
 
 #include "dbconnector.h"
 #include <map>
+#include <utility>
 #include <vector>
 
 class Server {
@@ -22,15 +23,17 @@ private:
 
   /** True if is child */
   bool isChild;
-  bool Fork();
+  bool Fork(int clientfd);
 
   int receiveMessage(int clientfd, char *buf);
   void spreadMessage(char *message, int bytesOfMessage);
 
-  std::vector<int> procChildren;
-  std::map<int, char *> connectedClients;
-  void insertClient(int clientfd, char *charIp);
-  void popClient(int clientfd);
+  //  Proccess ID and Clientfd its servicing
+  std::vector<std::pair<int, int>> procChildren;
+  int insertClientReader(int clientfd);
+  int insertClientWriter(int clientfd);
+  int popClientReader(int clientfd);
+  int popClientWriter(int clientfd);
 
   static int serverSocket;
 

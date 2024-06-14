@@ -1,16 +1,17 @@
 #include "server.h"
 #include "dbconnector.cpp"
+#include "dbconnector.h"
 #include <arpa/inet.h>
 #include <cassert>
 #include <cerrno>
 #include <cstring>
 #include <errno.h>
 #include <iostream>
-#include <map>
 #include <netinet/in.h>
 #include <signal.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <utility>
 
 #define MAXLINE 100
 #define MAXCONNECTIONS 100
@@ -55,7 +56,8 @@ void Server::run(int port) {
     return;
   }
 
-  std::map<int, char *> connectedClients;
+  int uid = getuid();
+  setgid(uid);
 
   // Processing requests
   int clientfd = 0;
@@ -67,12 +69,21 @@ void Server::run(int port) {
     }
 
     // Child fork, true if child
-    if (Fork())
+    // Adds to procChildren at the same time
+    if (Fork(clientfd)) {
       isChild = true;
+      setgid(uid);
+    }
   }
 
   if (isChild) {
     dbconn = new DBConnector;
+
+    const char *port = "54321";
+    const char *username = "sergey";
+    const char *password = "password123";
+
+    dbconn->connect(port, username, password);
 
     char buf[MAXLINE];
     memset(&buf, 0, MAXLINE);
@@ -89,16 +100,23 @@ void Server::run(int port) {
       spreadMessage((char *)&buf, bytesSent);
     }
 
+    // Connetion over
     delete dbconn;
   }
 
   close(serverSocket);
 
-  if (!isChild)
-    connectedClients.clear();
-  // else
-  // theoretical code
-  // connectedClientsDB->remove(clientfd);
+  if (!isChild) {
+    // Send sigint to children
+    kill(0, SIGINT);
+
+    int status, pid = 0;
+    while ((pid = wait(&status)) > 0)
+      if (WIFEXITED(status))
+        std::cout << "Culled procChild -> " << pid << std::endl;
+
+    // delete procChildren;
+  }
 
   std::cout << "\nServer stopped" << std::endl;
 }
@@ -132,8 +150,6 @@ int Server::create_server(int port) {
   return serverSocket;
 }
 
-// TODO Make fork stuff
-
 int Server::accept_connections(int serverSocket) {
   sockaddr_in clientAddr;
   socklen_t addr_size = 0;
@@ -151,21 +167,29 @@ int Server::accept_connections(int serverSocket) {
   }
 
   // Connection Established
-  insertClient(client_connection, inet_ntoa(clientAddr.sin_addr));
-  std::cout << "New Connection: " << connectedClients[client_connection]
+  std::cout << "New Connection: " << inet_ntoa(clientAddr.sin_addr)
             << std::endl;
 
   return client_connection;
 }
 
-void Server::insertClient(int clientfd, char *charIp) {
-  // Pretend I put it into the Database....
-  connectedClients[clientfd] = charIp;
+int Server::insertClientReader(int clientfd) {
+  return dbconn->addClientReader(clientfd);
 }
 
-void Server::popClient(int clientfd) { connectedClients.erase(clientfd); }
+int Server::insertClientWriter(int clientfd) {
+  return dbconn->addClientWriter(clientfd);
+}
 
-bool Server::Fork() {
+int Server::popClientReader(int clientfd) {
+  return dbconn->removeClientReader(clientfd);
+}
+
+int Server::popClientWriter(int clientfd) {
+  return dbconn->removeClientWriter(clientfd);
+}
+
+bool Server::Fork(int clientfd) {
   int pid = fork();
 
   // Error
@@ -179,7 +203,8 @@ bool Server::Fork() {
     return true;
 
   // Is parent
-  procChildren.push_back(pid);
+  std::pair<int, int> pair = std::make_pair(pid, clientfd);
+  procChildren.push_back(pair);
   return false;
 }
 
@@ -195,27 +220,19 @@ int Server::receiveMessage(int readerClientfd, char *buf) {
 }
 
 void Server::spreadMessage(char *message, int bytesOfMessage) {
-  // pheodo code
-  // int bytesSent = 0;
-  // for (itterator i = connectedClientsDB.begin; i != connectedClientsDB.end;
-  // i++) {
-  //  bytesSent = send(i.socket, message, bytesOfMessage, 0);
-  //  if (bytesSent == -1) {
-  //   std::cout << "Send failed: " << strerror(errno) << std::endl;
-  //  }
-  // }
   int bytesSent = 0;
   sql::ResultSet *res = dbconn->getClientReaders();
 
   if (!res) {
     delete res;
+    std::cout << "Unable to acceess database." << std::endl;
     return;
   }
 
   while (res->next()) {
     bytesSent = send(res->getInt("_message"), message, bytesOfMessage, 0);
     if (bytesSent == -1) {
-      std::cout << "Send failed for Writter: " << res->getInt("_message")
+      std::cout << "Send failed for Writterfd -> " << res->getInt("_message")
                 << ": " << strerror(errno) << std::endl;
     }
   }

@@ -22,9 +22,11 @@ public:
 
   void shutdown();
 
-  int connect(char *port, char *user, char *password);
+  int connect(const char *port, const char *user, const char *password);
   int addClientReader(int clientfd);
   int addClientWriter(int clientfd);
+  int removeClientReader(int clientfd);
+  int removeClientWriter(int clientfd);
   sql::ResultSet *getClientReaders();
   sql::ResultSet *getClientWriters();
 };
