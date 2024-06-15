@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include "server.h"
 
 #define DEFAULT_PORT 54321
 
@@ -15,7 +16,7 @@ int getPort(int, const char**);
   Validates the string can be used as a port number
   Returns true if the string consists of digits only.
 */
-bool portNumberValid(const char*)
+bool portNumberValid(const char*);
 
 /****************************************************************************************************/
 int main(int argc, const char **argv) {
