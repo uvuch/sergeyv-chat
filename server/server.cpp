@@ -1,6 +1,6 @@
 #include "server.h"
-#include "dbconnector.h"
 #include <arpa/inet.h>
+// #include "dbconnector.h"
 #include <cerrno>
 #include <cstring>
 #include <errno.h>
@@ -75,14 +75,6 @@ void Server::run(int port) {
   }
 
   if (isChild) {
-    dbconn = new DBConnector;
-
-    const char *port = "54321";
-    const char *username = "sergey";
-    const char *password = "password123";
-
-    dbconn->connect(port, username, password);
-
     char buf[MAXLINE];
     memset(&buf, 0, MAXLINE);
 
@@ -94,12 +86,9 @@ void Server::run(int port) {
         m_bQuitCommand = true;
         break;
       }
-
-      spreadMessage((char *)&buf, bytesSent);
     }
 
-    // Connetion over
-    delete dbconn;
+    // Connection over
   }
 
   close(serverSocket);
@@ -112,8 +101,6 @@ void Server::run(int port) {
     while ((pid = wait(&status)) > 0)
       if (WIFEXITED(status))
         std::cout << "Culled procChild -> " << pid << std::endl;
-
-    // delete procChildren;
   }
 
   std::cout << "\nServer stopped" << std::endl;
@@ -171,22 +158,6 @@ int Server::accept_connections(int serverSocket) {
   return client_connection;
 }
 
-int Server::insertClientReader(int clientfd) {
-  return dbconn->addClientReader(clientfd);
-}
-
-int Server::insertClientWriter(int clientfd) {
-  return dbconn->addClientWriter(clientfd);
-}
-
-int Server::popClientReader(int clientfd) {
-  return dbconn->removeClientReader(clientfd);
-}
-
-int Server::popClientWriter(int clientfd) {
-  return dbconn->removeClientWriter(clientfd);
-}
-
 bool Server::Fork(int clientfd) {
   int pid = fork();
 
@@ -215,23 +186,4 @@ int Server::receiveMessage(int readerClientfd, char *buf) {
   }
 
   return readBytes;
-}
-
-void Server::spreadMessage(char *message, int bytesOfMessage) {
-  int bytesSent = 0;
-  sql::ResultSet *res = dbconn->getClientReaders();
-
-  if (!res) {
-    delete res;
-    std::cout << "Unable to acceess database." << std::endl;
-    return;
-  }
-
-  while (res->next()) {
-    bytesSent = send(res->getInt("_message"), message, bytesOfMessage, 0);
-    if (bytesSent == -1) {
-      std::cout << "Send failed for Writterfd -> " << res->getInt("_message")
-                << ": " << strerror(errno) << std::endl;
-    }
-  }
 }

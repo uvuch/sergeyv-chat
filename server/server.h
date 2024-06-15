@@ -1,8 +1,6 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "dbconnector.h"
-#include <map>
 #include <utility>
 #include <vector>
 
@@ -17,7 +15,6 @@ public:
 
 private:
   static Server *m_pInstance;
-  DBConnector *dbconn;
   int create_server(int port);
   int accept_connections(int serverSocket);
 
@@ -26,14 +23,9 @@ private:
   bool Fork(int clientfd);
 
   int receiveMessage(int clientfd, char *buf);
-  void spreadMessage(char *message, int bytesOfMessage);
 
   //  Proccess ID and Clientfd its servicing
   std::vector<std::pair<int, int>> procChildren;
-  int insertClientReader(int clientfd);
-  int insertClientWriter(int clientfd);
-  int popClientReader(int clientfd);
-  int popClientWriter(int clientfd);
 
   static int serverSocket;
 
