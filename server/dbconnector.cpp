@@ -1,6 +1,5 @@
 #include "dbconnector.h"
 #include <cstdlib>
-#include <string>
 
 // DBConnector *DBConnector::m_pInstance = nullptr;
 
@@ -11,10 +10,11 @@
 }
 */
 
-void DBConnector::shutdown() {
-  if (con)
-    delete con;
-}
+// void DBConnector::shutdown() {
+//  Cant delete con because the program manages it apparently
+//  if (con)
+//  delete con;
+//}
 
 int DBConnector::connect(const char *port, const char *user,
                          const char *password) {
@@ -96,7 +96,7 @@ sql::ResultSet *DBConnector::getClientReaders() {
     if (res)
       delete res;
 
-    res = stmt->executeQuery("SELECT * from readersTable AS _message");
+    res = stmt->executeQuery("SELECT (clientfd) from readersTable AS _message");
 
     return res;
 
@@ -115,7 +115,7 @@ sql::ResultSet *DBConnector::getClientWriters() {
     if (res)
       delete res;
 
-    res = stmt->executeQuery("SELECT * from writersTable AS _message");
+    res = stmt->executeQuery("SELECT (clientfd) from writersTable AS _message");
 
     return res;
 

@@ -1,8 +1,6 @@
 #include "server.h"
-#include "dbconnector.cpp"
 #include "dbconnector.h"
 #include <arpa/inet.h>
-#include <cassert>
 #include <cerrno>
 #include <cstring>
 #include <errno.h>
