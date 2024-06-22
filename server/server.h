@@ -11,10 +11,9 @@ public:
   static void stop(int);
   void run(int port);
 
-  static volatile bool m_bQuitCommand;
-
 private:
   static Server *m_pInstance;
+  static volatile bool m_bQuitCommand;
   int create_server(int port);
   int accept_connections(int serverSocket);
 
@@ -26,6 +25,8 @@ private:
 
   //  Proccess ID and Clientfd its servicing
   std::vector<std::pair<int, int>> procChildren;
+
+  void cullWaitingChildren();
 
   static int serverSocket;
 

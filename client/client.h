@@ -1,18 +1,22 @@
 #ifndef CLIENT_H
 #define CLIENT_H
+
 class Client {
 
 public:
-  Client();
-  ~Client();
+  Client(){};
+  ~Client(){};
 
   // Returns clientfd
   int server_connect(const char *pIp, const char *pPort);
-  int getIp(const char *pIp);
-  int getPort(const char *pPort);
+
+  int checkIp(const char *pIp);
+  int checkPort(const char *pPort);
+
+  static bool killCalled;
 
 private:
-  int portNumberValid(const char *pPortStr);
+  static int serverfd;
 };
 
 #endif // DEBUG

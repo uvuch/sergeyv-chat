@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <utility>
 
@@ -86,6 +87,8 @@ void Server::run(int port) {
         m_bQuitCommand = true;
         break;
       }
+
+      cullWaitingChildren();
     }
 
     // Connection over
@@ -97,13 +100,10 @@ void Server::run(int port) {
     // Send sigint to children
     kill(0, SIGINT);
 
-    int status, pid = 0;
-    while ((pid = wait(&status)) > 0)
-      if (WIFEXITED(status))
-        std::cout << "Culled procChild -> " << pid << std::endl;
+    cullWaitingChildren();
   }
 
-  std::cout << "\nServer stopped" << std::endl;
+  std::cout << getuid() << " exiting." << std::endl;
 }
 
 int Server::create_server(int port) {
@@ -180,10 +180,17 @@ bool Server::Fork(int clientfd) {
 int Server::receiveMessage(int readerClientfd, char *buf) {
   int readBytes = recv(readerClientfd, &buf, MAXLINE, 0);
   if (readBytes == -1) {
-    std::cout << "Client side conenction disconnected: " << strerror(errno)
+    std::cout << "Client side connenction disconnected: " << strerror(errno)
               << std::endl;
     return -1;
   }
 
   return readBytes;
+}
+
+void Server::cullWaitingChildren() {
+  int status, pid = 0;
+  while ((pid = wait(&status)) > 0)
+    if (WIFEXITED(status))
+      std::cout << "Culled procChild -> " << pid << std::endl;
 }
