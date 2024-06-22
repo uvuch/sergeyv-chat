@@ -33,7 +33,8 @@ void Server::shutdown() {
 
 void Server::stop(int sig) {
   m_bQuitCommand = true;
-  close(serverSocket);
+  if (serverSocket)
+    close(serverSocket);
 }
 
 void Server::run(int port) {
@@ -83,12 +84,12 @@ void Server::run(int port) {
 
     while (!m_bQuitCommand) {
       bytesSent = receiveMessage(clientfd, (char *)&buf);
+      cullWaitingChildren();
+
       if (bytesSent == -1) {
         m_bQuitCommand = true;
         break;
       }
-
-      cullWaitingChildren();
     }
 
     // Connection over
