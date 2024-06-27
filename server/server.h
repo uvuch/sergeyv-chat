@@ -11,6 +11,9 @@ public:
 private:
   static Server *m_pInstance;
   static volatile bool m_bQuitCommand;
+  int port;
+
+  int prepareListeningSocket();
 
   Server(){};
   ~Server(){};

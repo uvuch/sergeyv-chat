@@ -27,8 +27,8 @@ int main(int argc, const char **argv) {
   }
 
   Server::instance()->run(port);
-
   Server::shutdown();
+
   return 0;
 }
 
