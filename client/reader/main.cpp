@@ -10,12 +10,10 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Reader *reader = Reader::instance();
-
   int serverfd = 0;
-  serverfd = reader->connect(argv[1], argv[2]);
+  serverfd = Reader::instance()->connect(argv[1], argv[2]);
   if (serverfd <= 0) {
-    reader->shutdown();
+    Reader::instance()->shutdown();
     return 0;
   }
 
@@ -23,9 +21,9 @@ int main(int argc, char *argv[]) {
 
   char buf[MAXSIZE];
 
-  reader->receiveMessages(serverfd, (char *)&buf);
+  Reader::instance()->receiveMessages(serverfd, (char *)&buf);
 
-  reader->shutdown();
+  Reader::instance()->shutdown();
 
   std::cout << "Exiting Reader." << std::endl;
 
