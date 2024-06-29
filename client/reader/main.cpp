@@ -1,3 +1,4 @@
+#include "../client.h"
 #include "reader.h"
 #include <iostream>
 
@@ -9,6 +10,10 @@ int main(int argc, char *argv[]) {
     std::cout << argv[0] << " ip port" << std::endl;
     return 1;
   }
+
+  // Valid check
+  if (Client::checkIp(argv[1]) && Client::checkPort(argv[2]))
+    return 1;
 
   int serverfd = 0;
   serverfd = Reader::instance()->connect(argv[1], argv[2]);

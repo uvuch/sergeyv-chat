@@ -43,27 +43,24 @@ int Client::server_connect(const char *pIp, const char *pPort) {
   return serverfd;
 }
 
-int Client::checkIp(const char *pIp) {
+bool Client::checkIp(const char *pIp) {
   const std::regex rIp("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
 
   if (!std::regex_search(pIp, rIp)) {
-  std:;
-    std::cout << "IP format is incorrect. Format => 255.255.255.255"
-              << std::endl;
-    return -1;
+    std::cout << "IP format is incorrect." << std::endl;
+    return false;
   }
 
-  return 0;
+  return true;
 }
 
-int Client::checkPort(const char *pPort) {
+bool Client::checkPort(const char *pPort) {
   const std::regex rPort("^\\d{1,5}$");
 
   if (!std::regex_search(pPort, rPort)) {
-    std::cout << "Port format is incorrect. Format => 1..5 Integers"
-              << std::endl;
-    return -1;
+    std::cout << "Port format is incorrect." << std::endl;
+    return false;
   }
 
-  return 0;
+  return true;
 }

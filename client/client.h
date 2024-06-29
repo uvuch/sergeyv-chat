@@ -10,8 +10,8 @@ public:
   // Returns clientfd
   int server_connect(const char *pIp, const char *pPort);
 
-  int checkIp(const char *pIp);
-  int checkPort(const char *pPort);
+  static bool checkIp(const char *pIp);
+  static bool checkPort(const char *pPort);
 
   static bool killCalled;
 
