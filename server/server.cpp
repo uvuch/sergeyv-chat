@@ -74,6 +74,8 @@ void Server::run(int port) {
       isChild = true;
       setgid(uid);
     }
+
+    cullWaitingChildren();
   }
 
   if (isChild) {
@@ -82,9 +84,17 @@ void Server::run(int port) {
 
     int bytesSent = 0;
 
+    char sentMessage[] = "test 1 2 3. ";
+
     while (!m_bQuitCommand) {
+      // READER CHECK!
+      //
+      send(clientfd, sentMessage, strlen(sentMessage), 0);
+      //
+      //
+      //
+
       bytesSent = receiveMessage(clientfd, (char *)&buf);
-      cullWaitingChildren();
 
       if (bytesSent == -1) {
         m_bQuitCommand = true;
