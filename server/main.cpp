@@ -1,6 +1,7 @@
 #include "server.h"
 #include <iostream>
 #include <stdlib.h>
+#include "server.h"
 
 #define DEFAULT_PORT 54321
 
