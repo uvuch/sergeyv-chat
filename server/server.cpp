@@ -107,7 +107,7 @@ void Server::run(int port) {
       //
 
       bytesSent = receiveMessage(clientfd, (char *)&buf);
-      spreadMessage(procChildren, (char *)&buf);
+      spreadMessage(procChildren, (char *)&buf, bytesSent);
 
       if (bytesSent == -1) {
         m_bQuitCommand = true;
