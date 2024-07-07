@@ -22,6 +22,8 @@ private:
   bool Fork(int clientfd);
 
   int receiveMessage(int clientfd, char *buf);
+  void spreadMessage(std::vector<std::pair<int, int>> *children, char *buf,
+                     int bytesToSend);
 
   //  Proccess ID and Clientfd its servicing
   std::vector<std::pair<int, int>> *procChildren;

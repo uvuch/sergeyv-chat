@@ -107,6 +107,7 @@ void Server::run(int port) {
       //
 
       bytesSent = receiveMessage(clientfd, (char *)&buf);
+      spreadMessage(procChildren, (char *)&buf);
 
       if (bytesSent == -1) {
         m_bQuitCommand = true;
@@ -213,6 +214,20 @@ int Server::receiveMessage(int readerClientfd, char *buf) {
   }
 
   return readBytes;
+}
+
+void Server::spreadMessage(std::vector<std::pair<int, int>> *children,
+                           char *buf, int bytesToSend) {
+  int childrenCount = children->size();
+  int sentBytes = 0;
+  for (int i = 0; i < childrenCount; i++) {
+    sentBytes = send(children->at(i).second, buf, bytesToSend, 0);
+
+    if (sentBytes == -1) {
+      std::cout << "Send failed " << children->at(i).second << ": "
+                << strerror(errno) << std::endl;
+    }
+  }
 }
 
 void Server::cullWaitingChildren() {
