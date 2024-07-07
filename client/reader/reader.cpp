@@ -21,9 +21,6 @@ Reader *Reader::instance() {
 }
 
 int Reader::connect(const char *pIp, const char *pPort) {
-  if (checkIp(pIp) == -1 || checkPort(pPort) == -1)
-    return -1;
-
   int serverfd = 0;
 
   serverfd = server_connect(pIp, pPort);
@@ -38,10 +35,12 @@ int Reader::connect(const char *pIp, const char *pPort) {
 
 int Reader::receiveMessages(int serverfd, char *buf) {
   int readBytes = 0;
-  std::time_t currentTime;
+  time_t timeCode = std::time(nullptr);
+  char *currentTime = std::asctime(std::localtime(&timeCode));
+  currentTime[strlen(currentTime) - 1] = 0;
 
   while (m_bRunning && !Client::killCalled) {
-    readBytes = recv(serverfd, &buf, MAXLINE, 0);
+    readBytes = recv(serverfd, buf, MAXLINE, 0);
 
     if (readBytes < 0) {
       // If SIGINT is responsible for the error
@@ -52,10 +51,7 @@ int Reader::receiveMessages(int serverfd, char *buf) {
       return -1;
     }
 
-    currentTime = std::time(nullptr);
-
-    std::cout << std::asctime(std::localtime(&currentTime)) << ": " << buf
-              << std::endl;
+    std::cout << currentTime << ": " << buf << std::endl;
   }
 
   return 0;

@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Valid check
-  if (Client::checkIp(argv[1]) && Client::checkPort(argv[2]))
+  if (!Client::checkIp(argv[1]) || !Client::checkPort(argv[2]))
     return 1;
 
   int serverfd = 0;
