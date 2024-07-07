@@ -7,10 +7,13 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <signal.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 
 #define MAXLINE 100
 #define MAXCONNECTIONS 100
@@ -58,6 +61,15 @@ void Server::run(int port) {
 
   int uid = getuid();
   setgid(uid);
+
+  // Get possible vector max size
+  int childProcVecSize = calculateVecSize<std::pair<int, int>>(MAXCONNECTIONS);
+
+  key_t key = ftok("shmfile", 0);
+  int shmid = shmget(key, childProcVecSize, 0666 | IPC_CREAT);
+
+  // Set the memory to the global variable
+  procChildren = (std::vector<std::pair<int, int>> *)shmat(shmid, (void *)0, 0);
 
   // Processing requests
   int clientfd = 0;
@@ -113,6 +125,10 @@ void Server::run(int port) {
 
     cullWaitingChildren();
   }
+
+  // You can just delete proChildren shared memory because the std::make_pair's
+  // will automaticaly delete themselves
+  shmctl(shmid, IPC_RMID, NULL);
 
   std::cout << getuid() << " exiting." << std::endl;
 }
@@ -184,7 +200,7 @@ bool Server::Fork(int clientfd) {
 
   // Is parent
   std::pair<int, int> pair = std::make_pair(pid, clientfd);
-  procChildren.push_back(pair);
+  procChildren->push_back(pair);
   return false;
 }
 
@@ -204,4 +220,8 @@ void Server::cullWaitingChildren() {
   while ((pid = wait(&status)) > 0)
     if (WIFEXITED(status))
       std::cout << "Culled procChild -> " << pid << std::endl;
+}
+
+template <typename T> int Server::calculateVecSize(size_t size) {
+  return (int)sizeof(std::vector<T>) + (size * sizeof(T));
 }

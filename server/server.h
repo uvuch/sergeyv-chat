@@ -24,7 +24,8 @@ private:
   int receiveMessage(int clientfd, char *buf);
 
   //  Proccess ID and Clientfd its servicing
-  std::vector<std::pair<int, int>> procChildren;
+  std::vector<std::pair<int, int>> *procChildren;
+  template <typename T> int calculateVecSize(size_t size);
 
   void cullWaitingChildren();
 
