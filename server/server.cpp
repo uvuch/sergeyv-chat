@@ -114,7 +114,7 @@ void Server::run(int port) {
     cullWaitingChildren();
   }
 
-  std::cout << getuid() << " exiting." << std::endl;
+  std::cout << getpid() << " exiting." << std::endl;
 }
 
 int Server::create_server(int port) {
