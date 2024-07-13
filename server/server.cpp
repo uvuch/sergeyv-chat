@@ -115,6 +115,7 @@ void Server::run(int port) {
   }
 
   std::cout << getpid() << " exiting." << std::endl;
+  std::cout.flush();
 }
 
 int Server::create_server(int port) {
