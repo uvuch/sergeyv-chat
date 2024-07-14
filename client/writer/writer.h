@@ -17,7 +17,7 @@ private:
 
 public:
   static Writer *instance();
-  int connect(const char *pIp, const char *pPort);
+  int connect(const char *pIp, const char *pPort, Client::Type connectionType);
   int sendMessage(int serverfd, char *buf);
   void shutdown();
 };

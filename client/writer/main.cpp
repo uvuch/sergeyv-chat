@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
     return 1;
 
   int serverfd = 0;
-  serverfd = Writer::instance()->connect(argv[1], argv[2]);
+  serverfd =
+      Writer::instance()->connect(argv[1], argv[2], Client::Type::Writer);
   if (serverfd <= 0) {
     Writer::instance()->shutdown();
     return 0;

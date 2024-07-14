@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
     return 1;
 
   int serverfd = 0;
-  serverfd = Reader::instance()->connect(argv[1], argv[2]);
+  serverfd =
+      Reader::instance()->connect(argv[1], argv[2], Client::Type::Reader);
   if (serverfd <= 0) {
     Reader::instance()->shutdown();
     return 0;

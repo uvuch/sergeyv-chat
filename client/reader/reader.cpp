@@ -20,10 +20,11 @@ Reader *Reader::instance() {
   return m_pInstance;
 }
 
-int Reader::connect(const char *pIp, const char *pPort) {
+int Reader::connect(const char *pIp, const char *pPort,
+                    Client::Type connectionType) {
   int serverfd = 0;
 
-  serverfd = server_connect(pIp, pPort);
+  serverfd = server_connect(pIp, pPort, connectionType);
   if (serverfd < 0)
     return -1;
 

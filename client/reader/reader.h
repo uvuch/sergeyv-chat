@@ -17,7 +17,7 @@ private:
 
 public:
   static Reader *instance();
-  int connect(const char *pIp, const char *pPort);
+  int connect(const char *pIp, const char *pPort, Client::Type connectionType);
   int receiveMessages(int serverfd, char *buf);
   void shutdown();
 };

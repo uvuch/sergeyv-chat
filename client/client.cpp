@@ -12,7 +12,8 @@
 int Client::serverfd = 0;
 bool Client::killCalled = false;
 
-int Client::server_connect(const char *pIp, const char *pPort) {
+int Client::server_connect(const char *pIp, const char *pPort,
+                           Client::Type connectionType) {
   int clientSock = socket(PF_INET, SOCK_STREAM, 0);
 
   if (clientSock < 0) {
@@ -39,6 +40,9 @@ int Client::server_connect(const char *pIp, const char *pPort) {
     return -1;
   }
   serverfd = clientSock;
+
+  // Send to configure the server connection Type
+  send(serverfd, (int *)&connectionType, sizeof(int), 0);
 
   return serverfd;
 }
