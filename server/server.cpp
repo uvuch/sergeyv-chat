@@ -59,19 +59,38 @@ void Server::run(int port) {
   int uid = getuid();
   setgid(uid);
 
+  bool isReader;
+
   // Processing requests
   int clientfd = 0;
   while (!m_bQuitCommand && !isChild) {
     clientfd = accept_connections(serverSocket);
+
     if (clientfd == -1) {
       m_bQuitCommand = true;
       break;
     }
 
+    // Get the client type
+    int *clientType = nullptr;
+    int bytesRead = recv(clientfd, clientType, sizeof(int), 0);
+
+    if (bytesRead == 0) {
+      m_bQuitCommand = true;
+      return;
+    }
     // Child fork, true if child
     // Adds to procChildren at the same time
     if (Fork(clientfd)) {
       isChild = true;
+
+      // Reader
+      if (!clientType)
+        isReader = true;
+      // Writer
+      else
+        isReader = false;
+
       setgid(uid);
     }
 
@@ -80,21 +99,20 @@ void Server::run(int port) {
 
   if (isChild) {
     char buf[MAXLINE];
-    memset(&buf, 0, MAXLINE);
 
     int bytesSent = 0;
 
-    char sentMessage[] = "test 1 2 3. ";
-
     while (!m_bQuitCommand) {
-      // READER CHECK!
-      //
-      send(clientfd, sentMessage, strlen(sentMessage), 0);
-      //
-      //
-      //
+      // Reader
+      if (isReader) {
+        // currently nothing
+      }
 
-      bytesSent = receiveMessage(clientfd, (char *)&buf);
+      // Writer
+      if (!isReader) {
+        bytesSent = receiveMessage(clientfd, (char *)&buf);
+        // spread message
+      }
 
       if (bytesSent == -1) {
         m_bQuitCommand = true;
