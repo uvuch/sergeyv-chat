@@ -7,6 +7,8 @@ public:
   Client(){};
   ~Client(){};
 
+  enum Type { Reader = 0, Writer = 1 };
+
   // Returns clientfd
   int server_connect(const char *pIp, const char *pPort);
 
