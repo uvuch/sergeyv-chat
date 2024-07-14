@@ -1,4 +1,5 @@
 #include "server.h"
+#include "../global.h"
 #include <arpa/inet.h>
 // #include "dbconnector.h"
 #include <cerrno>
@@ -52,8 +53,18 @@ void Server::run(int port) {
 
   // Get a server socket
   serverSocket = create_server(port);
-  if (serverSocket == -1) {
+  switch (serverSocket) {
+  case Errors::Connection::couldNotCreateSocket:
+    std::cout << "Could not create socket: " << strerror(errno) << std::endl;
     return;
+  case Errors::Connection::couldNotBindSocket:
+    std::cout << "Failed to bind socket: " << strerror(errno) << std::endl;
+    return;
+  case Errors::Connection::connectionListenFailed:
+    std::cout << "Connection listen failed: " << strerror(errno) << std::endl;
+    return;
+  default:
+    break;
   }
 
   int uid = getuid();
@@ -66,7 +77,10 @@ void Server::run(int port) {
   while (!m_bQuitCommand && !isChild) {
     clientfd = accept_connections(serverSocket);
 
-    if (clientfd == -1) {
+    if (clientfd == Errors::Connection::clientAcceptFailed) {
+      if (!m_bQuitCommand)
+        std::cout << "Connection accept failed: " << strerror(errno)
+                  << std::endl;
       m_bQuitCommand = true;
       break;
     }
@@ -81,12 +95,20 @@ void Server::run(int port) {
     }
     // Child fork, true if child
     // Adds to procChildren at the same time
-    if (Fork(clientfd)) {
+    int forkRes = Fork(clientfd);
+
+    if (forkRes == Errors::Fork::forkFailed) {
+      std::cout << "Fork failed: " << strerror(errno) << std::endl;
+      m_bQuitCommand = true;
+    }
+
+    if (forkRes) {
       isChild = true;
 
       // Reader
       if (!clientType)
         isReader = true;
+
       // Writer
       else
         isReader = false;
@@ -139,7 +161,9 @@ void Server::run(int port) {
 int Server::create_server(int port) {
   int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (serverSocket == -1) {
-    std::cout << "Could not create socket: " << strerror(errno) << std::endl;
+    // Could not create socket
+    return Errors::Connection::couldNotCreateSocket;
+    // std::cout << "Could not create socket: " << strerror(errno) << std::endl;
   }
 
   sockaddr_in addr;
@@ -153,13 +177,17 @@ int Server::create_server(int port) {
 
   if (bind(serverSocket, (const sockaddr *)&addr, socketaddr_size) == -1) {
     close(serverSocket);
-    std::cout << "Could not bind socket: " << strerror(errno) << std::endl;
-    return -1;
+
+    // Could not bind socket
+    return Errors::Connection::couldNotBindSocket;
+    // std::cout << "Could not bind socket: " << strerror(errno) << std::endl;
   }
 
   if (listen(serverSocket, MAXCONNECTIONS) == -1) {
-    std::cout << "Connection listen failed: " << strerror(errno) << std::endl;
-    return -1;
+    // std::cout << "Connection listen failed: " << strerror(errno) <<
+    // std::endl;
+    // Connection could not listen
+    return Errors::Connection::connectionListenFailed;
   }
 
   return serverSocket;
@@ -176,9 +204,10 @@ int Server::accept_connections(int serverSocket) {
 
   // Error during connection
   if (client_connection == -1) {
-    if (!m_bQuitCommand)
-      std::cout << "Connection accept failed: " << strerror(errno) << std::endl;
-    return -1;
+    // if (!m_bQuitCommand)
+    //   std::cout << "Connection accept failed: " << strerror(errno) <<
+    //   std::endl;
+    return Errors::Connection::clientAcceptFailed;
   }
 
   // Connection Established
@@ -188,20 +217,20 @@ int Server::accept_connections(int serverSocket) {
   return client_connection;
 }
 
-bool Server::Fork(int clientfd) {
+int Server::Fork(int clientfd) {
   int pid = fork();
 
   // Error
   if (pid == -1) {
     std::cout << "Fork failed: " << strerror(errno) << std::endl;
-    return -1;
+    return Errors::Fork::forkFailed;
   }
 
-  // Is Child
+  // Is Child, return 1
   if (pid == 0)
     return true;
 
-  // Is parent
+  // Is parent, return 0;
   std::pair<int, int> pair = std::make_pair(pid, clientfd);
   procChildren.push_back(pair);
   return false;
@@ -210,9 +239,9 @@ bool Server::Fork(int clientfd) {
 int Server::receiveMessage(int readerClientfd, char *buf) {
   int readBytes = recv(readerClientfd, &buf, MAXLINE, 0);
   if (readBytes == -1) {
-    std::cout << "Client side connenction disconnected: " << strerror(errno)
-              << std::endl;
-    return -1;
+    // std::cout << "Client side connenction disconnected: " << strerror(errno)
+    //           << std::endl;
+    return Errors::Connection::clientSideDisconnected;
   }
 
   return readBytes;

@@ -19,7 +19,7 @@ private:
 
   /** True if is child */
   bool isChild;
-  bool Fork(int clientfd);
+  int Fork(int clientfd);
 
   int receiveMessage(int clientfd, char *buf);
 
